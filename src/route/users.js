@@ -42,7 +42,7 @@ let users = [{
 for (let i = 0; i < 1000; i++) {
     users.push({
         id: i,
-        name: faker.name.lastName() + faker.name.firstName,
+        name: faker.name.lastName() + faker.name.firstName(),
         age: getRandomInt(15,50)
     })
 }
