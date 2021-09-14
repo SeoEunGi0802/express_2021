@@ -39,11 +39,11 @@ let users = [{
     age: 25
 }];
 
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 10000; i++) {
     users.push({
         id: i,
         name: faker.name.lastName() + faker.name.firstName(),
-        age: getRandomInt(15,50)
+        age: getRandomInt(15, 50)
     })
 }
 
@@ -51,9 +51,23 @@ let result;
 
 // user 전체 조회
 userRouter.get("/", (req, res) => {
+    let { name, age } = req.query;
+
+    let filteredUers = users;
+
+    if (name) {
+        filteredUers = _.filter(filteredUers, (user) => {
+            return user.name.includes(name);
+        });
+    }
+
+    if (age) {
+        filteredUers = _.filter(filteredUers, ['age', parseInt(age)])
+    }
+
     res.send({
-        count: users.length,
-        users
+        total_count : filteredUers.length,
+        filteredUers
     });
 });
 
