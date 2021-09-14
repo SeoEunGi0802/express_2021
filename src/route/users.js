@@ -1,8 +1,50 @@
 import { Router } from "express";
 import _ from "lodash";
 import faker from "faker";
+import sequelize from "sequelize"
 
 faker.locale = "ko";
+
+const seq = new sequelize('express', 'root', '1234', {
+    host: 'localhost',
+    dialect: 'mysql'
+});
+
+const check_seqlize_auth = async () => {
+    try {
+        await seq.authenticate();
+        console.log("DB 연결 성공");
+    } catch (err) {
+        console.log("DB 연결 실패 : ", err);
+    }
+}
+
+check_seqlize_auth();
+
+const User = seq.define("user", {
+    name: {
+        type: sequelize.STRING,
+        allowNull: false
+    },
+    age: {
+        type: sequelize.INTEGER,
+        allowNull: false
+    }
+});
+
+// // 더미 데이터 생성
+// const user_sync = async() => {
+//     await User.sync({ force: true });
+
+//     for (let i = 0; i < 100; i++) {
+//         User.create({
+//             name: faker.name.lastName() + faker.name.firstName(),
+//             age: getRandomInt(15, 50)
+//         });
+//     }
+// }
+
+// user_sync();
 
 const userRouter = Router();
 
@@ -12,63 +54,53 @@ const getRandomInt = (min, max) => {
     return Math.floor(Math.random() * (max - min) + min);
 }
 
-// user 기본 데이터
-let users = [{
-    id: 1,
-    name: "길동1",
-    age: 21
-},
-{
-    id: 2,
-    name: "길동2",
-    age: 22
-},
-{
-    id: 3,
-    name: "길동3",
-    age: 23
-},
-{
-    id: 4,
-    name: "길동4",
-    age: 24
-},
-{
-    id: 5,
-    name: "길동5",
-    age: 25
-}];
-
-for (let i = 0; i < 10000; i++) {
-    users.push({
-        id: i,
-        name: faker.name.lastName() + faker.name.firstName(),
-        age: getRandomInt(15, 50)
-    })
-}
-
 let result;
 
 // user 전체 조회
-userRouter.get("/", (req, res) => {
+userRouter.get("/", async (req, res) => {
     let { name, age } = req.query;
+    const { Op } = sequelize;
 
-    let filteredUers = users;
+    // // 내꺼 소스
+    // const result = await User.findAll({
+    //     attributes: ["name", "age"],
+    //     where: {
+    //         [Op.and]: [
+    //             (name ? {name: name} : (age ? {age: age} : {name:name}, {age: age}))
+    //         ]
+    //     }
+    // });
 
-    if (name) {
-        filteredUers = _.filter(filteredUers, (user) => {
-            return user.name.includes(name);
+    // res.send({
+    //     result
+    // });
+
+    // 교수님 소스
+    try {
+        const findUserQuery = {
+            attributes: ["name", "age"],
+        }
+
+        let result;
+
+        if (name && age) {
+            findUserQuery['where'] = { name: { [Op.substring]: name }, age }
+        } else if (name) {
+            findUserQuery['where'] = { name: { [Op.substring]: name } }
+
+        } else if (age) {
+            findUserQuery['where'] = { age }
+        }
+
+        result = await User.findAll(findUserQuery);
+
+        res.status(200).send({
+            count: result.length,
+            result
         });
+    } catch (err) {
+        res.status(500).send("");
     }
-
-    if (age) {
-        filteredUers = _.filter(filteredUers, ['age', parseInt(age)])
-    }
-
-    res.send({
-        total_count : filteredUers.length,
-        filteredUers
-    });
 });
 
 // user id로 조회
@@ -92,22 +124,27 @@ userRouter.get("/:id", (req, res) => {
 });
 
 // user 생성
-userRouter.post("/", (req, res) => {
-    const create_user = req.body
-    const check_user = _.find(users, ["id", create_user.id]);
+userRouter.post("/", async (req, res) => {
+    try {
+        const { name, age } = req.body;
 
-    if (!check_user && create_user.id && create_user.name && create_user.age) {
-        users.push(create_user);
-        result = `${create_user.name}님을 생성 했습니다.`
+        if (!name || !age) {
+            res.status(400).send({
+                msg: "입력 값이 잘못되었습니다."
+            });
+        }
+
+        const result = await User.create({
+            name,
+            age
+        });
 
         res.status(200).send({
-            result
+            msg: `${name}님이 생성 되었습니다.`
         });
-    } else {
-        result = `입력 요청값이 잘못되었습니다.`
-
-        res.status(400).send({
-            result
+    } catch (err) {
+        res.status(500).send({
+            msg: "서버에 문제가 발생했습니다."
         });
     }
 });
