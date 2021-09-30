@@ -1,172 +1,138 @@
 import { Router } from "express";
 import _ from "lodash";
 import faker from "faker";
-import sequelize from "sequelize";
+import sequilize from "sequelize";
 
-const seq = new sequelize('express', 'root', '1234', {
-    host: 'localhost',
-    dialect: 'mysql',
-    // logging: false
+const seq = new sequilize("express", "root", "1234", {
+    host: "localhost",
+    dialect: "mysql",
 });
 
 const Board = seq.define("board", {
     title: {
-        type: sequelize.STRING,
-        allowNull: false
+        type: sequilize.STRING,
+        allowNull: false,
     },
     content: {
-        type: sequelize.STRING,
-        allowNull: true
-    }
+        type: sequilize.TEXT,
+        allowNull: true,
+    },
 });
 
 const board_sync = async () => {
     try {
         await Board.sync({ force: true });
-
         for (let i = 0; i < 10000; i++) {
             await Board.create({
-                title: faker.lorem.sentence(1),
-                content: faker.lorem.sentence(10)
+                title: faker.lorem.sentences(1),
+                content: faker.lorem.sentences(10),
             });
         }
     } catch (err) {
-
+        console.log(err);
     }
-}
+};
 
 // board_sync();
 
-const boards_router = Router();
+const boardRouter = Router();
 
-// board 기본 데이터
-let boards = [{
-    id: 1,
-    title: "게시판 타이틀 입니다.",
-    content: "게시판 내용 입니다.",
-    create_date: "2021-09-05",
-    update_date: "2021-09-06"
-},
-{
-    id: 2,
-        title: "게시판 타이틀 입니다.",
-        content: "게시판 내용 입니다.",
-        create_date: "2021-09-05",
-        update_date: "2021-09-06"
-},
-{
-    id: 3,
-    title: "게시판 타이틀 입니다.",
-    content: "게시판 내용 입니다.",
-    create_date: "2021-09-05",
-    update_date: "2021-09-06"
-},
-{
-    id: 4,
-    title: "게시판 타이틀 입니다.",
-    content: "게시판 내용 입니다.",
-    create_date: "2021-09-05",
-    update_date: "2021-09-06"
-},
-{
-    id: 5,
-    title: "게시판 타이틀 입니다.",
-    content: "게시판 내용 입니다.",
-    create_date: "2021-09-05",
-    update_date: "2021-09-06"
-}];
+let boards = [];
 
-let result;
-
-// board 전체 조회
-boards_router.get("/", (req, res) => {
+// 게시판 전체 조회
+boardRouter.get("/", async (req, res) => {
+    const boards = await Board.findAll();
     res.send({
         count: boards.length,
-        boards
+        boards,
     });
 });
 
-// board id로 조회
-boards_router.get("/:id", (req, res) => {
-    const find_board = _.find(boards, { id: parseInt(req.params.id) });
+//게시판 id 값 조회
+boardRouter.get("/:id", (req, res) => {
+    const findBoard = _.find(boards, { id: parseInt(req.params.id) });
+    let msg;
+    if (findBoard) {
+        msg = "정상적으로 조회되었습니다.";
+        res.status(200).send({
+            msg,
+            findBoard,
+        });
+    } else {
+        msg = `조회하신 게시글이 없습니다. .`;
+        res.status(400).send({
+            msg,
+            findBoard,
+        });
+    }
+});
 
-    if (find_board) {
-        result = `정상적으로 조회되었습니다.`
-
+// 게시판 생성
+boardRouter.post("/", (req, res) => {
+    const createBoard = req.body;
+    const check_board = _.find(boards, ["id", createBoard.id]);
+    let result;
+    if (
+        !check_board &&
+        createBoard.id &&
+        createBoard.title &&
+        createBoard.content &&
+        createBoard.createDate &&
+        createBoard.updateData
+    ) {
+        boards.push(createBoard);
+        result = `${createBoard.id}번째 게시글을 생성 하였습니다.`;
         res.status(200).send({
             result,
-            find_board
         });
     } else {
-        result = `해당 아이디를 가진 유저가 없습니다.`
-
+        result = "입력 요청값이 잘못되었습니다.";
         res.status(400).send({
-            result
+            result,
         });
     }
 });
 
-// board 생성
-boards_router.post("/", (req, res) => {
-    const create_board = req.body
-    const check_board = _.find(boards, ["id", create_board.id]);
-
-    if (!check_board && create_board.id && create_board.title && create_board.content) {
-        boards.push(create_board);
-        result = `게시글 [${create_board.title}]를 작성 했습니다.`
-
-        res.status(200).send({
-            result
-        });
-    } else {
-        result = `입력 요청값이 잘못되었습니다.`
-
-        res.status(400).send({
-            result
-        });
-    }
-});
-
-// board title 변경
-boards_router.put("/:id", (req, res) => {
-    const find_board_idx = _.findIndex(boards, ["id", parseInt(req.params.id)]);
-
-    if (find_board_idx !== -1) {
-        boards[find_board_idx].title = req.body.title;
-
-        result = `성공적으로 수정 되었습니다.`;
-
-        res.status(200).send({
-            result
-        });
-    } else {
-        let result = `아이디가 ${req.params.id}인 게시판이 존재하지 않습니다.`;
-
-        res.status(400).send({
-            result
-        });
-    }
-});
-
-// board 지우기
-boards_router.delete("/:id", (req, res) => {
+//게시글 title 변경
+boardRouter.put("/:id", (req, res) => {
     const check_board = _.find(boards, ["id", parseInt(req.params.id)]);
-
+    let result;
     if (check_board) {
-        boards = _.reject(boards, ["id", parseInt(req.params.id)]);
-
-        result = `성공적으로 삭제 되었습니다.`;
-
+        boards = boards.map((data) => {
+            if (data.id === parseInt(req.params.id)) {
+                data.title = req.body.title;
+            }
+            return data;
+        });
+        result = "성공적으로 수정 되었습니다.";
         res.status(200).send({
-            result
+            result,
         });
     } else {
-        let result = `아이디가 ${req.params.id}인 게시판이 존재하지 않습니다.`;
-
+        result = `${req.params.id}번째 게시글이 존재하지 않습니다.`;
         res.status(400).send({
-            result
+            result,
         });
     }
 });
 
-export default boards_router;
+//게시글 지우기
+boardRouter.delete("/:id", (req, res) => {
+    const check_board = _.find(boards, ["id", parseInt(req.params.id)]);
+    let result;
+    if (check_board) {
+        // lodash의 reject 메서드를 이용해 해당 id를 가진 객체를 삭제
+        boards = _.reject(boards, ["id", parseInt(req.params.id)]);
+        result = "성공적으로 삭제 되었습니다.";
+        res.status(200).send({
+            result,
+        });
+    } else {
+        result = `${req.params.id} 번째 게시글이 존재하지 않습니다.`;
+        res.status(400).send({
+            result,
+        });
+    }
+});
+
+export default boardRouter;
