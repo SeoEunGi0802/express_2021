@@ -1,13 +1,15 @@
 import { Router } from "express";
 import _ from "lodash";
 import faker from "faker";
-import sequelize from "sequelize"
+import bcrypt from "bcrypt";
+import sequelize from "sequelize";
 
 faker.locale = "ko";
 
 const seq = new sequelize('express', 'root', '1234', {
     host: 'localhost',
-    dialect: 'mysql'
+    dialect: 'mysql',
+    // logging: false
 });
 
 const check_seqlize_auth = async () => {
@@ -29,20 +31,32 @@ const User = seq.define("user", {
     age: {
         type: sequelize.INTEGER,
         allowNull: false
+    },
+    password: {
+        type: sequelize.STRING,
+        allowNull: false
     }
 });
 
-// // 더미 데이터 생성
-// const user_sync = async() => {
-//     await User.sync({ force: true });
+const initDB = async () => {
+    await User.sync()
+}
 
-//     for (let i = 0; i < 100; i++) {
-//         User.create({
-//             name: faker.name.lastName() + faker.name.firstName(),
-//             age: getRandomInt(15, 50)
-//         });
-//     }
-// }
+initDB();
+
+// 더미 데이터 생성
+const user_sync = async () => {
+    await User.sync({ force: true });
+
+    for (let i = 0; i < 10000; i++) {
+        const hashpwd = await bcrypt.hash("test1234", 10);
+        User.create({
+            name: faker.name.lastName() + faker.name.firstName(),
+            age: getRandomInt(15, 50),
+            password: hashpwd
+        });
+    }
+}
 
 // user_sync();
 
@@ -87,12 +101,17 @@ userRouter.get("/", async (req, res) => {
             findUserQuery['where'] = { name: { [Op.substring]: name }, age }
         } else if (name) {
             findUserQuery['where'] = { name: { [Op.substring]: name } }
-
         } else if (age) {
             findUserQuery['where'] = { age }
         }
 
         result = await User.findAll(findUserQuery);
+
+        // result = await User.findAll({
+        //     where: { name, age }
+        // });
+
+        // User.findOne()
 
         res.status(200).send({
             count: result.length,
@@ -103,25 +122,25 @@ userRouter.get("/", async (req, res) => {
     }
 });
 
-// user id로 조회
-userRouter.get("/:id", (req, res) => {
-    const find_user = _.find(users, { id: parseInt(req.params.id) });
+// // user id로 조회
+// userRouter.get("/:id", (req, res) => {
+//     const find_user = _.find(users, { id: parseInt(req.params.id) });
 
-    if (find_user) {
-        result = `정상적으로 조회되었습니다.`
+//     if (find_user) {
+//         result = `정상적으로 조회되었습니다.`
 
-        res.status(200).send({
-            result,
-            find_user
-        });
-    } else {
-        result = `해당 아이디를 가진 유저가 없습니다.`
+//         res.status(200).send({
+//             result,
+//             find_user
+//         });
+//     } else {
+//         result = `해당 아이디를 가진 유저가 없습니다.`
 
-        res.status(400).send({
-            result
-        });
-    }
-});
+//         res.status(400).send({
+//             result
+//         });
+//     }
+// });
 
 // user 생성
 userRouter.post("/", async (req, res) => {
@@ -149,24 +168,14 @@ userRouter.post("/", async (req, res) => {
     }
 });
 
-// name name 변경
+// user name 변경
 userRouter.put("/:id", (req, res) => {
-    const find_user_idx = _.findIndex(users, ["id", parseInt(req.params.id)]);
+    let { id, name, age } = req.query;
+    const { Op } = sequelize;
 
-    if (find_user_idx !== -1) {
-        users[find_user_idx].name = req.body.name;
-
-        result = `성공적으로 수정 되었습니다.`;
-
-        res.status(200).send({
-            result
-        });
-    } else {
-        let result = `아이디가 ${req.params.id}인 유저가 존재하지 않습니다.`;
-
-        res.status(400).send({
-            result
-        });
+    try {
+    } catch (err) {
+        res.status(500).send("");
     }
 });
 
@@ -188,6 +197,70 @@ userRouter.delete("/:id", (req, res) => {
         res.status(400).send({
             result
         });
+    }
+});
+
+userRouter.get("/test/:id", async (req, res) => {
+    const { Op } = sequelize;
+
+    try {
+        // findAll
+        const userResult = await User.findAll({
+            // attributes: ["id", "name", "age"]
+            where: {
+                [Op.or]: [{
+                    name: {
+                        [Op.startsWith]: "김"
+                    },
+                    age: {
+                        [Op.gte]: 40
+                    }
+                }, {
+                    name: {
+                        [Op.startsWith]: "하"
+                    },
+                    age: {
+                        [Op.gte]: 40
+                    }
+                }]
+            },
+            order: [["age", "DESC"], ["name", "ASC"]]
+        });
+
+        const boardResult = await Board.findAll();
+
+        const user = await User.findOne({
+            where: { id: req.params.id }
+        });
+
+        const board = await Board.findOne({
+            where: { id: req.params.id }
+        });
+
+        if (!user || !board) {
+            res.status(404).send("해당 정보가 존재하지 않습니다.");
+        }
+
+        await user.destory();
+
+        board.title += "test 타이틀입니다.";
+
+        await board.save();
+
+        res.status(200).send({
+            user,
+            board,
+            users: {
+                count: userResult.length,
+                data: userResult
+            },
+            boards: {
+                count: boardResult.length,
+                data: boardResult
+            }
+        });
+    } catch (err) {
+        res.status(500).send("서버에 문제가 발생했습니다.");
     }
 });
 
