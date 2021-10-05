@@ -44,7 +44,7 @@ const initDB = async () => {
 
 initDB();
 
-// 더미 데이터 생성
+// 더미 데이터 생성 함수
 const user_sync = async () => {
     await User.sync({ force: true });
 

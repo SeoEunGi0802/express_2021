@@ -19,6 +19,7 @@ const Board = seq.define("board", {
     },
 });
 
+// 더미 데이터 생성 함수
 const board_sync = async () => {
     try {
         await Board.sync({ force: true });
