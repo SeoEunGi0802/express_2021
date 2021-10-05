@@ -122,32 +122,38 @@ userRouter.get("/", async (req, res) => {
     }
 });
 
-// // user id로 조회
-// userRouter.get("/:id", (req, res) => {
-//     const find_user = _.find(users, { id: parseInt(req.params.id) });
+// user id로 조회
+userRouter.get("/:id", async (req, res) => {
+    try {
+        const findUser = await User.findOne({
+            where: {
+                id: req.params.id
+            }
+        });
 
-//     if (find_user) {
-//         result = `정상적으로 조회되었습니다.`
-
-//         res.status(200).send({
-//             result,
-//             find_user
-//         });
-//     } else {
-//         result = `해당 아이디를 가진 유저가 없습니다.`
-
-//         res.status(400).send({
-//             result
-//         });
-//     }
-// });
+        if (findUser) {
+            res.status(200).send({
+                // count: findUser.length,
+                findUser
+            });
+        } else {
+            res.status(400).send({
+                msg: "해당 아이디값을 값을 가진 게시글이 없습니다."
+            });
+        }
+    } catch (err) {
+        res.status(500).send({
+            msg: "서버에 문제가 발생했습니다."
+        });
+    }
+});
 
 // user 생성
 userRouter.post("/", async (req, res) => {
     try {
-        const { name, age } = req.body;
+        const { name, age, password } = req.body;
 
-        if (!name || !age) {
+        if (!name || !age || !password) {
             res.status(400).send({
                 msg: "입력 값이 잘못되었습니다."
             });
@@ -155,11 +161,12 @@ userRouter.post("/", async (req, res) => {
 
         const result = await User.create({
             name,
-            age
+            age,
+            password
         });
 
         res.status(200).send({
-            msg: `${name}님이 생성 되었습니다.`
+            msg: `${result.name}님이 생성 되었습니다.`
         });
     } catch (err) {
         res.status(500).send({
@@ -168,67 +175,59 @@ userRouter.post("/", async (req, res) => {
     }
 });
 
-// user name 변경
+// user name, age 변경
 userRouter.put("/:id", async (req, res) => {
     try {
-        const updateUser = req.params.id;
-        const updateUserName = req.body.name;
-        const updateUserAge = req.body.age;
-        const { Op } = sequilize;
+        const { name, age } = req.body;
 
-        if (!updateUser || (!updateUserName && !updateUserAge)) {
-            res
-                .status(400)
-                .send("유저가 존재하지 않거나 입력 요청이 잘못되었습니다.");
-        }
-
-        const findUserQuery = await User.findOne({
+        let user = await User.findOne({
             where: {
-                id: { [Op.eq]: updateUser },
-            },
+                id: req.params.id
+            }
         });
 
-        let updateUserQuery;
+        if (!user) {
+            res.status(400).send({
+                msg: '유저가 존재하지 않거나 입력값이 잘못 되었습니다.'
+            });
+        } else if (name || age) {
+            if (name) {
+                user.name = name;
+                msg += `유저 name이 [${name}]로`;
+            }
 
-        if (updateUserName && updateUserAge) {
-            updateUserQuery = await User.update(
-                { name: updateUserName, age: updateUserAge },
-                {
-                    where: {
-                        id: { [Op.eq]: updateUser },
-                    },
+            if (age) {
+                if (age) {
+                    msg += ", ";
                 }
-            );
-        } else if (updateUserName) {
-            updateUserQuery = await User.update(
-                { name: updateUserName },
-                {
-                    where: {
-                        id: { [Op.eq]: updateUser },
-                    },
-                }
-            );
-        } else if (updateUserAge) {
-            updateUserQuery = await User.update(
-                { age: updateUserAge },
-                {
-                    where: {
-                        id: { [Op.eq]: updateUser },
-                    },
-                }
-            );
+
+                user.age = age;
+                msg += `유저 age가 [${age}]로`;
+            }
+
+            msg += "수정되었습니다.";
+
+            await user.save();
+
+            res.status(200).send({
+                msg
+            });
         }
+
         res.status(200).send({
-            msg: `${updateUser}님 수정을 완료하였습니다.`,
+            msg: '유저정보가가 정상적으로 수정 되었습니다.'
         });
+
     } catch (err) {
-        res.status(500).send(err);
+        console.log(err);
+        res.status(500).send({
+            msg: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
+        });
     }
 });
 
 // user 지우기
 userRouter.delete("/:id", async (req, res) => {
-    //auth체크 + 권한, 본인 체크
     try {
         let user = await User.findOne({
             where: {
@@ -237,13 +236,13 @@ userRouter.delete("/:id", async (req, res) => {
         });
         if (!user) {
             res.status(400).send({
-                msg: "유저가 존재하지 않습니다."
+                msg: "해당 유저가 존재하지 않습니다."
             });
         }
 
         await user.destroy();
         res.status(200).send({
-            mgs: "유저정보가 정상적으로 삭제 되었습니다."
+            mgs: "유저가 정상적으로 삭제 되었습니다."
         });
     } catch (err) {
         res.status(500).send({
