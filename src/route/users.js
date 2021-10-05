@@ -7,7 +7,7 @@ import db from "../models/index.js";
 
 faker.locale = "ko";
 
-const User = db.User;
+const { User } = db;
 
 // 더미 데이터 생성 함수
 const user_sync = async () => {
@@ -32,8 +32,6 @@ const getRandomInt = (min, max) => {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min) + min);
 }
-
-let result;
 
 // user 전체 조회
 userRouter.get("/", async (req, res) => {

@@ -2,11 +2,12 @@ import dotenv from 'dotenv';
 import Sequelize from 'sequelize';
 
 import User from './user.js';
+import Board from './board.js';
 
 dotenv.config();
 
 const { DATABASE, DATABASE_HOST, USER_NAME, PASSWORD, LOGGING } = process.env;
-console.log(DATABASE, DATABASE_HOST, USER_NAME, PASSWORD)
+
 const sequelize = new Sequelize(DATABASE, USER_NAME, PASSWORD, {
     host: DATABASE_HOST,
     dialect: 'mysql',
@@ -20,7 +21,8 @@ sequelize.authenticate().then(() => {
 });
 
 const db = {
-    User: User(sequelize, Sequelize.DataTypes)
+    User: User(sequelize, Sequelize.DataTypes),
+    Board: Board(sequelize, Sequelize.DataTypes)
 };
 
 db.sequelize = sequelize;

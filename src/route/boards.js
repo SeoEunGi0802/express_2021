@@ -1,24 +1,12 @@
 import { Router } from "express";
 import _ from "lodash";
+import sequelize from "sequelize";
 import faker from "faker";
-import sequilize from "sequelize";
+import db from "../models/index.js";
 
-const seq = new sequilize("express", "root", "1234", {
-    host: "localhost",
-    dialect: "mysql",
-    // logging: false
-});
+faker.locale = "ko";
 
-const Board = seq.define("board", {
-    title: {
-        type: sequilize.STRING,
-        allowNull: false,
-    },
-    content: {
-        type: sequilize.TEXT,
-        allowNull: true,
-    },
-});
+const { Board } = db;
 
 // 더미 데이터 생성 함수
 const board_sync = async () => {
@@ -38,8 +26,6 @@ const board_sync = async () => {
 // board_sync();
 
 const boardRouter = Router();
-
-let boards = [];
 
 // 게시판 전체 조회
 boardRouter.get("/", async (req, res) => {
