@@ -1,49 +1,13 @@
 import { Router } from "express";
 import _ from "lodash";
+import sequelize from "sequelize";
 import faker from "faker";
 import bcrypt from "bcrypt";
-import sequelize from "sequelize";
 import db from "../models/index.js";
 
 faker.locale = "ko";
 
-const seq = new sequelize('express', 'root', '1234', {
-    host: 'localhost',
-    dialect: 'mysql',
-    // logging: false
-});
-
-const check_seqlize_auth = async () => {
-    try {
-        await seq.authenticate();
-        console.log("DB 연결 성공");
-    } catch (err) {
-        console.log("DB 연결 실패 : ", err);
-    }
-}
-
-check_seqlize_auth();
-
-const User = seq.define("user", {
-    name: {
-        type: sequelize.STRING,
-        allowNull: false
-    },
-    age: {
-        type: sequelize.INTEGER,
-        allowNull: false
-    },
-    password: {
-        type: sequelize.STRING,
-        allowNull: false
-    }
-});
-
-const initDB = async () => {
-    await User.sync()
-}
-
-// initDB();
+const User = db.User;
 
 // 더미 데이터 생성 함수
 const user_sync = async () => {
@@ -65,7 +29,7 @@ const userRouter = Router();
 
 const getRandomInt = (min, max) => {
     min = Math.ceil(min);
-    max = Math.ceil(max);
+    max = Math.floor(max);
     return Math.floor(Math.random() * (max - min) + min);
 }
 
