@@ -3,6 +3,7 @@ import _ from "lodash";
 import faker from "faker";
 import bcrypt from "bcrypt";
 import sequelize from "sequelize";
+import db from "../models/index.js";
 
 faker.locale = "ko";
 
@@ -42,7 +43,7 @@ const initDB = async () => {
     await User.sync()
 }
 
-initDB();
+// initDB();
 
 // 더미 데이터 생성 함수
 const user_sync = async () => {
