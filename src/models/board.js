@@ -9,5 +9,10 @@ export default (sequelize, DataTypes) => {
             allowNull: true
         }
     });
+
+    Board.associate = function (models) {
+        models.Board.belongsTo(models.User)
+    };
+
     return Board;
 };

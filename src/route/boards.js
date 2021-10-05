@@ -1,29 +1,7 @@
 import { Router } from "express";
-import _ from "lodash";
-import sequelize from "sequelize";
-import faker from "faker";
 import db from "../models/index.js";
 
-faker.locale = "ko";
-
 const { Board } = db;
-
-// 더미 데이터 생성 함수
-const board_sync = async () => {
-    try {
-        await Board.sync({ force: true });
-        for (let i = 0; i < 10000; i++) {
-            await Board.create({
-                title: faker.lorem.sentences(1),
-                content: faker.lorem.sentences(10),
-            });
-        }
-    } catch (err) {
-        console.log(err);
-    }
-};
-
-// board_sync();
 
 const boardRouter = Router();
 

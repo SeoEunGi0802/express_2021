@@ -1,22 +1,22 @@
 export default (sequelize, DataTypes) => {
-    const User = sequelize.define("user", {
-        name: {
+    const Permission = sequelize.define("permission", {
+        title: {
             type: DataTypes.STRING,
             allowNull: false
         },
-        age: {
+        level: {
             type: DataTypes.INTEGER,
             allowNull: false
         },
-        password: {
+        desc: {
             type: DataTypes.STRING,
             allowNull: true
         }
     });
+    
+    Permission.associate = function (models) {
+        models.Permission.hasOne(models.User);
+    }
 
-    User.associate = function (models) {
-        models.User.hasMany(models.Board)
-    };
-
-    return User;
+    return Permission;
 };

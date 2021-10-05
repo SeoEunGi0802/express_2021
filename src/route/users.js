@@ -1,61 +1,18 @@
 import { Router } from "express";
-import _ from "lodash";
-import sequelize from "sequelize";
-import faker from "faker";
-import bcrypt from "bcrypt";
 import db from "../models/index.js";
-
-faker.locale = "ko";
 
 const { User } = db;
 
-// 더미 데이터 생성 함수
-const user_sync = async () => {
-    await User.sync({ force: true });
-
-    for (let i = 0; i < 10000; i++) {
-        const hashpwd = await bcrypt.hash("test1234", 10);
-        User.create({
-            name: faker.name.lastName() + faker.name.firstName(),
-            age: getRandomInt(15, 50),
-            password: hashpwd
-        });
-    }
-}
-
-// user_sync();
-
 const userRouter = Router();
-
-const getRandomInt = (min, max) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min);
-}
 
 // user 전체 조회
 userRouter.get("/", async (req, res) => {
-    let { name, age } = req.query;
-    const { Op } = sequelize;
-
-    // // 내꺼 소스
-    // const result = await User.findAll({
-    //     attributes: ["name", "age"],
-    //     where: {
-    //         [Op.and]: [
-    //             (name ? {name: name} : (age ? {age: age} : {name:name}, {age: age}))
-    //         ]
-    //     }
-    // });
-
-    // res.send({
-    //     result
-    // });
-
-    // 교수님 소스
     try {
+        let { name, age } = req.query;
+        const { Op } = db.sequelize;
+
         const findUserQuery = {
-            attributes: ["name", "age"],
+            attributes: ["id", "name", "age"],
         }
 
         let result;
@@ -69,12 +26,6 @@ userRouter.get("/", async (req, res) => {
         }
 
         result = await User.findAll(findUserQuery);
-
-        // result = await User.findAll({
-        //     where: { name, age }
-        // });
-
-        // User.findOne()
 
         res.status(200).send({
             count: result.length,
@@ -215,7 +166,7 @@ userRouter.delete("/:id", async (req, res) => {
 });
 
 userRouter.get("/test/:id", async (req, res) => {
-    const { Op } = sequelize;
+    const { Op } = db.sequelize;
 
     try {
         // findAll
