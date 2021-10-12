@@ -1,7 +1,7 @@
 import { Router } from "express";
 import db from "../models/index.js";
 
-const { Board } = db;
+const { User, Board } = db;
 
 const boardRouter = Router();
 
@@ -18,6 +18,10 @@ boardRouter.get("/", async (req, res) => {
 boardRouter.get("/:id", async (req, res) => {
     try {
         const findBoard = await Board.findOne({
+            include: [{
+                model: User,
+                attributes: ["id", "name", "age"]
+            }],
             where: {
                 id: req.params.id
             }
@@ -43,22 +47,33 @@ boardRouter.get("/:id", async (req, res) => {
 // 게시판 생성
 boardRouter.post("/", async (req, res) => {
     try {
-        const { title, content } = req.body;
+        const { title, content, userId } = req.body;
+
+        const writer_id = await User.findOne({
+            where: {
+                id: userId
+            }
+        });
 
         if (!title) {
             res.status(400).send({
                 msg: "입력 값이 잘못되었습니다."
             });
+        } else if (!writer_id) {
+            res.status(400).send({
+                msg: "작성자가 존재하지 않습니다."
+            });
+        } else {
+            const result = await Board.create({
+                title,
+                content: content ? content : null,
+                userId: userId ? userId : null
+            });
+
+            res.status(200).send({
+                msg: `id ${result.id}, ${result.title} 게시글이 생성 되었습니다.`
+            });
         }
-
-        const result = await Board.create({
-            title,
-            content: content ? content : null
-        });
-
-        res.status(200).send({
-            msg: `id ${result.id}, ${result.title} 게시글이 생성 되었습니다.`
-        });
     } catch (err) {
         res.status(500).send({
             msg: "서버에 문제가 발생했습니다."

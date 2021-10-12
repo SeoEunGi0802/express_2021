@@ -1,15 +1,16 @@
 import { Router } from "express";
+import bcrypt from "bcrypt";
 import db from "../models/index.js";
 import user from "../models/user.js";
 
-const { User, Permission } = db;
+const { User, Board, Permission } = db;
 
 const userRouter = Router();
 
 // user 전체 조회
 userRouter.get("/", async (req, res) => {
     try {
-        let { name, age } = req.query;
+        let { name, age } = req.params;
         const { Op } = db.sequelize;
 
         const findUserQuery = {
@@ -41,6 +42,14 @@ userRouter.get("/", async (req, res) => {
 userRouter.get("/:id", async (req, res) => {
     try {
         const findUser = await User.findOne({
+            // include: [Permission, Board], // 전체 조회
+            include: [{
+                model: Permission,
+                attributes: ["id", "title", "level"]
+            }, {
+                model: Board,
+                attributes: ["id", "title", "content"]
+            }],
             where: {
                 id: req.params.id
             }
@@ -68,26 +77,28 @@ userRouter.post("/", async (req, res) => {
     try {
         const { name, age, password, permission } = req.body;
 
-        if (!name || !age || !password) {
+        if (!name || !age || !password || !permission) {
             res.status(400).send({
                 msg: "입력 값이 잘못되었습니다."
             });
+        } else {
+            const hashpwd = await bcrypt.hash(password, 4);
+
+            const result = await User.create({
+                name,
+                age,
+                password: hashpwd
+            });
+
+            await result.createPermission({
+                title: permission.title,
+                level: permission.level
+            });
+
+            res.status(200).send({
+                msg: `${result.name}님이 생성 되었습니다.`
+            });
         }
-
-        const result = await User.create({
-            name,
-            age,
-            password
-        });
-
-        await result.createPermission({
-            title: permission.title,
-            level: permission.level
-        });
-
-        res.status(200).send({
-            msg: `${result.name}님이 생성 되었습니다.`
-        });
     } catch (err) {
         res.status(500).send({
             msg: "서버에 문제가 발생했습니다."
