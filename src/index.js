@@ -6,19 +6,35 @@ import db from './models/index.js';
 
 const app = express();
 
-db.sequelize.query("SET FOREIGN_KEY_CHECKS = 0", { raw: true })
-    .then(() => {
-        db.sequelize.sync({ force: true }).then(() => {
-            console.log("sync 끝");
+if (process.env.NODE_ENV === "development") {
+    db.sequelize.query("SET FOREIGN_KEY_CHECKS = 0", { raw: true })
+        .then(() => {
+            db.sequelize.sync({ force: true }).then(() => {
+                console.log("개발환경 sync 끝");
 
-            app.use(express.json());
+                app.use(express.json());
 
-            app.use(express.urlencoded({ extended: true }));
+                app.use(express.urlencoded({ extended: true }));
 
-            app.use("/users", userRouter);
+                app.use("/users", userRouter);
 
-            app.use("/boards", boardRouter);
+                app.use("/boards", boardRouter);
 
-            app.listen(3000);
+                app.listen(3000);
+            });
         });
+} else if (process.env.NODE_ENV === "production") {
+    db.sequelize.sync().then(() => {
+        console.log("사용환경 sync 끝");
+
+        app.use(express.json());
+
+        app.use(express.urlencoded({ extended: true }));
+
+        app.use("/users", userRouter);
+
+        app.use("/boards", boardRouter);
+
+        app.listen(3000);
     });
+}

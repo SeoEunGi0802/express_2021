@@ -1,7 +1,8 @@
 import { Router } from "express";
 import db from "../models/index.js";
+import user from "../models/user.js";
 
-const { User } = db;
+const { User, Permission } = db;
 
 const userRouter = Router();
 
@@ -52,7 +53,7 @@ userRouter.get("/:id", async (req, res) => {
             });
         } else {
             res.status(400).send({
-                msg: "해당 아이디값을 값을 가진 게시글이 없습니다."
+                msg: "해당 아이디값을 값을 가진 유저가 없습니다."
             });
         }
     } catch (err) {
@@ -65,7 +66,7 @@ userRouter.get("/:id", async (req, res) => {
 // user 생성
 userRouter.post("/", async (req, res) => {
     try {
-        const { name, age, password } = req.body;
+        const { name, age, password, permission } = req.body;
 
         if (!name || !age || !password) {
             res.status(400).send({
@@ -77,6 +78,11 @@ userRouter.post("/", async (req, res) => {
             name,
             age,
             password
+        });
+
+        await result.createPermission({
+            title: permission.title,
+            level: permission.level
         });
 
         res.status(200).send({
