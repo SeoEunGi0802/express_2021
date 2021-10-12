@@ -3,7 +3,7 @@ import Sequelize from 'sequelize';
 
 import User from './user.js';
 import Board from './board.js';
-import Permission from './permission';
+import Permission from './permission.js';
 
 dotenv.config();
 

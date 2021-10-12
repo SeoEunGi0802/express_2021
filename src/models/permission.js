@@ -13,9 +13,9 @@ export default (sequelize, DataTypes) => {
             allowNull: true
         }
     });
-    
+
     Permission.associate = function (models) {
-        models.Permission.hasOne(models.User);
+        models.Permission.belongsTo(models.User);
     }
 
     return Permission;
