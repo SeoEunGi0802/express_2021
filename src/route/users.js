@@ -10,7 +10,7 @@ const userRouter = Router();
 // user 전체 조회
 userRouter.get("/", async (req, res) => {
     try {
-        let { name, age } = req.params;
+        let { name, age } = req.query;
         const { Op } = db.sequelize;
 
         const findUserQuery = {
@@ -20,10 +20,10 @@ userRouter.get("/", async (req, res) => {
         let result;
 
         if (name && age) {
-            findUserQuery['where'] = { name: { [Op.substring]: name }, age }
-        } else if (name) {
-            findUserQuery['where'] = { name: { [Op.substring]: name } }
-        } else if (age) {
+            findUserQuery['where'] = { name, age }
+        } else if (name && !age) {
+            findUserQuery['where'] = { name }
+        } else if (!name && age) {
             findUserQuery['where'] = { age }
         }
 
@@ -183,12 +183,12 @@ userRouter.delete("/:id", async (req, res) => {
 });
 
 userRouter.get("/test/:id", async (req, res) => {
-    const { Op } = db.sequelize;
-
     try {
+        const { Op } = db.sequelize;
+
         // findAll
         const userResult = await User.findAll({
-            // attributes: ["id", "name", "age"]
+            // attributes: ["id", "name", "age"],
             where: {
                 [Op.or]: [{
                     name: {

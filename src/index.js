@@ -9,7 +9,7 @@ const app = express();
 if (process.env.NODE_ENV === "development") {
     db.sequelize.query("SET FOREIGN_KEY_CHECKS = 0", { raw: true })
         .then(() => {
-            db.sequelize.sync({ force: true }).then(() => {
+            db.sequelize.sync().then(() => {
                 console.log("개발환경 sync 끝");
 
                 app.use(express.json());
